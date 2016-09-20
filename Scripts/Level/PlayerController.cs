@@ -1,15 +1,19 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class PlayerController : MonoBehaviour {
 
-	// enum MoveType { Step, StepClimb, TurnLeft, TurnRight, TurnAround, Interact };
 	enum MoveType { Step, StepClimb, TurnWest, TurnEast, TurnNorth, TurnSouth, Interact };
 
 	public float rotateTime = 0.25f;
 	public float walkTime = 1.5f;
 	public float liftTime = 0.5f;
 	public float fallTime = 0.25f;
+
+	public DisplayLevelResult displayResult;
+	public LevelResult levelResult;
+	public bool Active = true;
 
 	private Queue moveList;
 	private PlayerInfo playerInfo;
@@ -41,6 +45,8 @@ public class PlayerController : MonoBehaviour {
 	private Queue interactPositionList;
 	private Queue interactAnimList;
 
+	private GameProgress prog;
+
 	private AreaTracker space;
 	private AreaTracker ahead;
 	private AreaTracker above;
@@ -50,6 +56,7 @@ public class PlayerController : MonoBehaviour {
 	private AreaTracker below;
 
 	void Awake () {
+		prog = Object.FindObjectOfType<GameProgress>();
 		playerInfo = GetComponent<PlayerInfo>();
 		anim = GetComponentInChildren<Animator>();
 		moveList = new Queue();
@@ -93,6 +100,9 @@ public class PlayerController : MonoBehaviour {
 		if (Input.GetKeyDown(KeyCode.Space)) {
 			moveList.Enqueue(MoveType.Interact);
 		}
+		if (Input.GetKeyDown(KeyCode.Escape)) {
+			SceneManager.LoadScene("Level");
+		}
 		if (!moving) {
 			move();
 		} 
@@ -129,7 +139,17 @@ public class PlayerController : MonoBehaviour {
 
 		if (!space.IsEmpty()) {
 			if (space.GetObject().CompareTag("Collectible")) {
-				playerInfo.Collect(space.GetObject().GetComponent<Collectible>());
+				Collectible c = space.GetObject().GetComponent<Collectible>();
+				playerInfo.Collect(c);
+				levelResult.Collect(c);
+				space.GetObject().transform.SetParent(transform);
+			} else if (space.GetObject().CompareTag("Exit")) {
+				// TODO: Animate Exit
+				// TODO: Show level exit
+				prog.FinishLevel();
+				print(levelResult);
+				displayResult.Display(levelResult);
+//				SceneManager.LoadScene("Title");
 			}
 		}
 
@@ -173,6 +193,7 @@ public class PlayerController : MonoBehaviour {
 						if (aboveAhead.IsEmpty()) {
 							stepForward();
 						} else { // Drop block behind
+							stepForward();
 							unsetParent();
 						}
 					}
@@ -298,7 +319,7 @@ public class PlayerController : MonoBehaviour {
 		}
 		setStart();
 		moveTime = (float)moveTimeList.Dequeue();
-		 print("moveTime dequeued to " + moveTime);
+		// print("moveTime dequeued to " + moveTime);
 		moveTimeLeft = moveTime;
 		targetRotation = startRotation * (Quaternion)targetRotationList.Dequeue();
 		targetPosition = startPosition + (Vector3)targetPositionList.Dequeue();

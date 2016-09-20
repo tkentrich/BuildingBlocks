@@ -16,6 +16,7 @@ public class CameraController : MonoBehaviour {
 	public Vector3 freelanceVector;
 	public float roundMagnitude;
 	public Quaternion roundDirection;
+	public bool Active = true;
 
 	void Awake() {
 		type = CameraType.Behind;
@@ -30,7 +31,7 @@ public class CameraController : MonoBehaviour {
 			return;
 		}
 
-		if (Input.GetKeyDown(KeyCode.Return)) {
+		if (Active && Input.GetKeyDown(KeyCode.Return)) {
 			switch (type) {
 				case CameraType.Behind:
 					type = CameraType.Overhead;
@@ -46,7 +47,7 @@ public class CameraController : MonoBehaviour {
 					break;
 			}
 		}
-		if (Input.GetKeyDown(KeyCode.PageUp)) {
+		if (Active && Input.GetKeyDown(KeyCode.PageUp)) {
 			switch (type) {
 				case CameraType.Behind:
 					behindDistance -= 1;
@@ -73,7 +74,7 @@ public class CameraController : MonoBehaviour {
 					break;
 			}
 		}
-		if (Input.GetKeyDown(KeyCode.PageDown)) {
+		if (Active && Input.GetKeyDown(KeyCode.PageDown)) {
 			switch (type) {
 				case CameraType.Behind:
 					behindDistance += 1;

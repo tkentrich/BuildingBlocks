@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class LevelBuilder : MonoBehaviour {
@@ -13,38 +14,49 @@ public class LevelBuilder : MonoBehaviour {
 	public GameObject diamondPrefab;
 	public GameObject exitPrefab;
 	public Text inventoryText;
+	public Canvas inventoryCanvas;
+	public DisplayLevelResult displayResult;
 	public Camera cam;
 
 	public GameObject objectContainer;
 
+	GameProgress prog;
 	public int levelID;
 	private string levelName;
 	private Vector3 size;
 	private Vector3 defaultStart;
 	public Vector3 newStart;
 
+	private LevelResult levelResult;
 	private GameObject player;
 
 	void Start () {
-		Build(levelID);
+		prog = Object.FindObjectOfType<GameProgress>();
+		if (prog == null) {
+			SceneManager.LoadScene("Initialize");
+		} else {
+			levelID = prog.levelIndex;
+			Build(levelID);
+		}
 	}
 
 	void Build (int level) {
-		//for (int i = 0; i < objectContainer.transform.childCount; i++) {
-		//	System.Console.WriteLine(objectContainer.transform.GetChild(i));
-		//}
+		levelResult = new LevelResult();
+
 		string name;
 		Vector3 size;
 		Vector3 start;
 		string objects;
-		LevelData.GetData(level, out name, out size, out start, out objects);
+		int[] unlock;
+		LevelData.GetData(level, out name, out size, out start, out objects, out unlock);
+		prog.WillUnlock(unlock);
 
-		/*switch (level) {
-		//Add(ObjectType.Player, defaultStart);
-		*/
 		SetSize(size);
 		Add(ObjectType.Player, start);
 		player.GetComponent<PlayerInfo>().inventoryText = inventoryText;
+		player.GetComponent<PlayerInfo>().inventoryCanvas = inventoryCanvas;
+		player.GetComponent<PlayerController>().levelResult = levelResult;
+		player.GetComponent<PlayerController>().displayResult = displayResult;
 		cam.GetComponent<CameraController>().SetFocus(player.transform);
 		Add(objects);
 	}
@@ -97,9 +109,11 @@ public class LevelBuilder : MonoBehaviour {
 					break;
 				case LevelData.COIN:
 					Add(ObjectType.Coin, x, y, z);
+					levelResult.AddCoin();
 					break;
 				case LevelData.DIAMOND:
 					Add(ObjectType.Diamond, x, y, z);
+					levelResult.AddDiamond();
 					break;
 			}
 			x++;
@@ -180,13 +194,6 @@ public class LevelBuilder : MonoBehaviour {
 			case ObjectType.Player:
 				player = (GameObject)Instantiate(playerPrefab, new Vector3(x, y, z), Quaternion.Euler(xr, yr, zr));
 				break;
-		}
-	}
-
-	void Update() {
-		if (Input.GetKeyDown(KeyCode.Escape)) {
-			print("Escape");
-			SetSize(20, 20, 20);
 		}
 	}
 }

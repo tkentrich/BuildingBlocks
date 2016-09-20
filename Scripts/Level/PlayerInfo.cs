@@ -6,6 +6,7 @@ public class PlayerInfo : MonoBehaviour {
 
 	public enum AbilityType {Lift, Climb, ClimbWBlock};
 	public enum CollectibleType {Diamond, Coin};
+	public Canvas inventoryCanvas;
 
 	public Text inventoryText;
 
@@ -17,6 +18,7 @@ public class PlayerInfo : MonoBehaviour {
 		inventory = new Hashtable();
 		inventory.Add(CollectibleType.Diamond, 0);
 		inventory.Add(CollectibleType.Coin, 0);
+		//inventoryCanvas;
 		SetText();
 	}
 
