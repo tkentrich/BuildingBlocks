@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class LevelResult : MonoBehaviour {
+public class LevelResult : ScriptableObject {
 
 	int attempts;
 	int steps;

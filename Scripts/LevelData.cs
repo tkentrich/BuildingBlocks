@@ -276,7 +276,36 @@ public static class LevelData {
 			"         " +
 			"         " +
 			"O        ";
-		unlockTable[5] = new int[] {};
+		unlockTable[5] = new int[] { 6 };
+
+		nameTable[6] = "Intro 02";
+		sizeTable[6] = new Vector3(5, 4, 5);
+		startTable[6] = new Vector3(2, 1, 2);
+		objectsTable[6] =
+			"  XX " +
+			"     " +
+			"X X  " +
+			"X    " +
+			"   XX" +
+
+			"XXB  " +
+			"X XX " +
+			"X    " +
+			"     " +
+			"   XX" +
+
+			"    X" +
+			"  XX " +
+			"     " +
+			"     " +
+			"    O" +
+
+			"  X  " +
+			"  XX " +
+			"     " +
+			"     " +
+			"     ";
+		unlockTable[6] = new int[] { };
 
 		initialized = true;
 	}
@@ -295,7 +324,7 @@ public static class LevelData {
 		switch (levelSet) {
 			default:
 			case "default":
-				return new int[] { -1, 0, 1, 2, 3, 4, 5 };
+				return new int[] { -1, 0, 6, 1, 2, 3, 4, 5 };
 		}
 	}
 

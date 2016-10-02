@@ -41,7 +41,7 @@ public class LevelBuilder : MonoBehaviour {
 	}
 
 	void Build (int level) {
-		levelResult = new LevelResult();
+		levelResult = LevelResult.CreateInstance<LevelResult>();
 
 		string name;
 		Vector3 size;
