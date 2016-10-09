@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour {
 	public float walkTime = 1.5f;
 	public float liftTime = 0.5f;
 	public float fallTime = 0.25f;
+	public float swipeSensitivity = 20f;
 
 	public DisplayLevelResult displayResult;
 	public LevelResult levelResult;
@@ -29,6 +30,8 @@ public class PlayerController : MonoBehaviour {
 	private Vector3 interactStartPosition;
 	private Vector3 interactTargetPosition;
 
+	private bool andDrag;
+	private Vector2 dragStart;
 	private float moveTime;
 	private float moveTimeLeft;
 	private Queue targetRotationList;
@@ -38,6 +41,7 @@ public class PlayerController : MonoBehaviour {
 
 	private bool interacting; // Currently interacting with an object
 	private bool unparent; // After this move, release parent relationship
+	private bool levelComplete;
 	private Transform interactTransform;
 	private Transform interactOldParent;
 	private Animator interactAnim;
@@ -45,6 +49,7 @@ public class PlayerController : MonoBehaviour {
 	private Queue interactPositionList;
 	private Queue interactAnimList;
 
+	private CameraController camera;
 	private GameProgress prog;
 
 	private AreaTracker space;
@@ -69,6 +74,7 @@ public class PlayerController : MonoBehaviour {
 		interactPositionList = new Queue();
 		interactAnimList = new Queue();
 		moving = false;
+		levelComplete = false;
 		// TODO: Better way to find the AreaTrackers
 		Component[] trackerComponents = GetComponentsInChildren(typeof(AreaTracker));
 		if (trackerComponents.Length != 7) {
@@ -82,9 +88,42 @@ public class PlayerController : MonoBehaviour {
 			aboveAboveAhead = (AreaTracker)trackerComponents[5];
 			below = (AreaTracker)trackerComponents[6];
 		}
+		camera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>();
 	}
 
 	void Update () {
+		if (Input.GetKeyDown(KeyCode.Return) && levelComplete) {
+			SceneManager.LoadScene("Title");
+		}
+		int moveDir = -1;
+		if (AndroidInput.touchCountSecondary > 0) {
+			Touch a = AndroidInput.GetSecondaryTouch(0);
+			switch (a.phase) {
+				case TouchPhase.Began:
+					andDrag = true;
+					dragStart = a.position;
+					break;
+				case TouchPhase.Ended:
+					Vector2 dragEnd = a.position;
+					if (Vector2.Distance(dragEnd, dragStart) > swipeSensitivity) {
+						if (Mathf.Abs(dragEnd.x - dragStart.x) > Mathf.Abs(dragEnd.y - dragStart.y) * 2) { // Left/Right
+							if (dragEnd.x - dragStart.x < 0) {
+								moveDir = 0;
+							} else {
+								moveDir = 2;
+							}
+						} else if (Mathf.Abs(dragEnd.x - dragStart.x) > Mathf.Abs(dragEnd.y - dragStart.y) * 2) { // Up/Down
+							if (dragEnd.y - dragStart.y > 0) {
+								moveDir = 1;
+							} else {
+								moveDir = 3;
+							}
+						}
+					}
+					break;
+			}
+		}
+		/*
 		if (Input.GetKeyDown(KeyCode.LeftArrow)) {
 			moveList.Enqueue(MoveType.TurnWest);
 		}
@@ -96,12 +135,43 @@ public class PlayerController : MonoBehaviour {
 		}
 		if (Input.GetKeyDown(KeyCode.UpArrow)) {
 			moveList.Enqueue(MoveType.TurnNorth);
+		}*/
+		if (Input.GetKeyDown(KeyCode.LeftArrow)) {
+			moveDir = 0;
 		}
-		if (Input.GetKeyDown(KeyCode.Space)) {
-			moveList.Enqueue(MoveType.Interact);
+		if (Input.GetKeyDown(KeyCode.UpArrow)) {
+			moveDir = 1;
 		}
-		if (Input.GetKeyDown(KeyCode.Escape)) {
-			SceneManager.LoadScene("Level");
+		if (Input.GetKeyDown(KeyCode.RightArrow)) {
+			moveDir = 2;
+		}
+		if (Input.GetKeyDown(KeyCode.DownArrow)) {
+			moveDir = 3;
+		}
+		if (moveDir >= 0) {
+			moveDir += camera.AdjustDirection() % 4;
+			switch (moveDir) {
+				default:
+				case 0:
+					moveList.Enqueue(MoveType.TurnWest);
+					break;
+				case 1:
+					moveList.Enqueue(MoveType.TurnNorth);
+					break;
+				case 2:
+					moveList.Enqueue(MoveType.TurnEast);
+					break;
+				case 3:
+					moveList.Enqueue(MoveType.TurnSouth);
+					break;
+			}
+		} else {
+			if (Input.GetKeyDown(KeyCode.Space)) {
+				moveList.Enqueue(MoveType.Interact);
+			}
+			if (Input.GetKeyDown(KeyCode.Escape)) {
+				SceneManager.LoadScene("Level");
+			}
 		}
 		if (!moving) {
 			move();
@@ -136,7 +206,9 @@ public class PlayerController : MonoBehaviour {
 	}
 
 	void move() {
-
+		if (levelComplete) {
+			return;
+		}
 		if (!space.IsEmpty()) {
 			if (space.GetObject().CompareTag("Collectible")) {
 				Collectible c = space.GetObject().GetComponent<Collectible>();
@@ -146,6 +218,8 @@ public class PlayerController : MonoBehaviour {
 			} else if (space.GetObject().CompareTag("Exit")) {
 				// TODO: Animate Exit
 				// TODO: Show level exit
+				levelComplete = true;
+				camera.Active = false;
 				prog.FinishLevel();
 				print(levelResult);
 				displayResult.Display(levelResult);
@@ -163,6 +237,7 @@ public class PlayerController : MonoBehaviour {
 		}
 
 		MoveType move = (MoveType)moveList.Dequeue();
+		levelResult.Step();
 		switch (move) {
 			default:
 				return;
@@ -328,19 +403,10 @@ public class PlayerController : MonoBehaviour {
 			interactTargetPosition = interactStartPosition + (Vector3)interactPositionList.Dequeue();
 			string intClip = (string)interactAnimList.Dequeue();
 			// TODO: Check for clip existence
-			//if (interactAnim.GetInteger(intClip) >= 0) {
-				interactAnim.Play(intClip);
-			//} else {
-			//	interactAnim.Play("Idle");
-			//	print("Unknown interactAnim clip " + intClip);
-			//}
+			interactAnim.Play(intClip);
 		}
 		string clip = (string)animList.Dequeue();
-		// if (anim.GetInteger(clip) >= 0) {
 		anim.Play(clip);
-		// } else {
-		//	print("Unknown player animator clip " + clip);
-		//}
 		return true;
 	}
 

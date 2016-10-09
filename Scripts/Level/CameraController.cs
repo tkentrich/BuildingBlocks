@@ -25,7 +25,11 @@ public class CameraController : MonoBehaviour {
 	public void SetFocus(Transform focus) {
 		this.focus = focus;
 	}
-		
+
+	public int AdjustDirection() {
+		return 0;
+	}
+
 	void Update () {
 		if (focus == null) {
 			return;
